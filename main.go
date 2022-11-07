@@ -15,6 +15,7 @@ func main() {
 	log.SetLevel(config.DsnCdnDefaultLogLevel)
 
 	var file string
+	var domain string
 
 	app := &cli.App{
 		Name:  "DNSCDN",
@@ -30,6 +31,12 @@ func main() {
 				Usage:       "File to retrieve or upload, including extension.",
 				Aliases:     []string{"f"},
 				Destination: &file,
+			},
+			&cli.StringFlag{
+				Name:        "domain",
+				Usage:       "Domain to retrieve from or upload to.",
+				Aliases:     []string{"d"},
+				Destination: &domain,
 			},
 		},
 		Commands: []*cli.Command{

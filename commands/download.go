@@ -12,66 +12,46 @@ import (
 
 func DownloadCommand(cCtx *cli.Context) error {
 
-	filename := cli.
-		log.Info("Retrieving file!")
-	dnsFile := dnsToFile(filepath)
-	err := os.WriteFile(fmt.Sprintf("reconstructed-%s", filepath), dnsFile, os.ModeAppend)
+	fileName := cCtx.String("file")
+	dnsName := strings.Split(fileName, ".")[0]
+	domainName := cCtx.String("domain")
+
+	log.Infof("Retrieving %s.", fileName)
+
+	fileData, err := dnsToFile(dnsName, domainName)
 	if err != nil {
-		return
+		return err
 	}
+
+	err = os.WriteFile(fmt.Sprintf("DNS-%s", fileName), fileData, os.ModeAppend)
+
+	return err
+
 }
 
-func stringToBlocks(s string) []string {
+func dnsToFile(filename string, domain string) ([]byte, error) {
 
-	// Calculate the amount of blocks required
-	nBlocks := len(s) / DnsCdnDataSize
-	if (len(s) % DnsCdnDataSize) != 0 {
-		nBlocks++
-	}
-
-	blocks := make([]string, nBlocks)
-
-	blockIndex := 0
-	blockCounter := 0
-	for _, char := range s {
-		blocks[blockIndex] = blocks[blockIndex] + string(char)
-
-		blockCounter++
-
-		// If we have exceeded the max allowed block size, move to the next block string by
-		// incrementing the index
-		if blockCounter >= dnsCdnDataSize {
-			blockCounter = 0
-			blockIndex++
-		}
-		//log.Debugf("Rune %v is '%c' (%d)\n", blockIndex, char, blockCounter)
-	}
-
-	return blocks
-}
-
-func dnsToFile(filename string) []byte {
-
-	// TODO: Pass in the domain
-	domain := "tqid.dev"
-	filename = strings.Split(filename, ".")[0]
+	logger := log.StandardLogger().WithFields(log.Fields{
+		"filename": filename,
+		"domain":   domain,
+	})
 
 	sfile := ""
+	// TODO: Figure out how to calculate this automatically
 	for i := 0; i < 7; i++ {
 		lookup := fmt.Sprintf("%s-%d.%s", filename, i, domain)
-		log.Debugf("Retreiving TXT record for %s", lookup)
-		txt, _ := net.LookupTXT(lookup)
+		logger = logger.WithField("record", lookup)
+		logger.Debugf("Retrieving TXT record.")
+		txt, err := net.LookupTXT(lookup)
+		if err != nil {
+			logger.WithError(err).Error("Could not retrieve TXT record.")
+			return nil, err
+		}
 		sfile = sfile + txt[0]
 	}
 
-	file, _ := base64.StdEncoding.DecodeString(sfile)
+	file, err := base64.StdEncoding.DecodeString(sfile)
 
-	return file
+	return file, err
 
-}
-
-func summary(blocks []string) {
-	for i, b := range blocks {
-		log.Debugf("Block %v, len: %v", i, len(b))
-	}
 }
