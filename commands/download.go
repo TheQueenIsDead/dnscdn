@@ -7,18 +7,19 @@ import (
 	"github.com/urfave/cli/v2"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 )
 
 func DownloadCommand(cCtx *cli.Context) error {
 
 	fileName := cCtx.String("file")
-	dnsName := strings.Split(fileName, ".")[0]
 	domainName := cCtx.String("domain")
+	idxFqdn := fmt.Sprintf("%s.media.%s", fileName, domainName)
 
 	log.Infof("Retrieving %s.", fileName)
 
-	fileData, err := dnsToFile(dnsName, domainName)
+	fileData, err := dnsToFile(idxFqdn)
 	if err != nil {
 		return err
 	}
@@ -29,17 +30,29 @@ func DownloadCommand(cCtx *cli.Context) error {
 
 }
 
-func dnsToFile(filename string, domain string) ([]byte, error) {
+func dnsToFile(idxFqdn string) ([]byte, error) {
+
+	mediaSplit := strings.Split(idxFqdn, ".media.")
+	fileName := mediaSplit[0]
+	domainName := mediaSplit[len(mediaSplit)-1]
 
 	logger := log.StandardLogger().WithFields(log.Fields{
-		"filename": filename,
-		"domain":   domain,
+		"fqdn":   idxFqdn,
+		"file":   fileName,
+		"domain": domainName,
 	})
 
+	// Lookup index record in order to find count of records
+	idx, err := net.LookupTXT(idxFqdn)
+	if err != nil {
+		return nil, err
+	}
+	idxN, _ := strconv.Atoi(idx[0])
+
+	// Enumerate records and store data in variable
 	sfile := ""
-	// TODO: Figure out how to calculate this automatically
-	for i := 0; i < 7; i++ {
-		lookup := fmt.Sprintf("%s-%d.%s", filename, i, domain)
+	for i := 0; i < idxN; i++ {
+		lookup := fmt.Sprintf("%s.%d.media.%s", fileName, i, domainName)
 		logger = logger.WithField("record", lookup)
 		logger.Debugf("Retrieving TXT record.")
 		txt, err := net.LookupTXT(lookup)

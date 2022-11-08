@@ -45,17 +45,22 @@ func (c *CloudflareDnsProvider) Blockify(filename string, domain string, blocks 
 
 	var err error
 
-	filename = strings.Split(filename, ".")[0]
+	// Create index record
+	idxName := fmt.Sprintf("%s.media.%s", filename, domain)
+	idxData := len(blocks)
+	err = c.createRecord(idxName, strconv.Itoa(idxData))
+	if err != nil {
+		log.WithError(err).Error("Could not create index record.")
+		return err
+	}
 
+	// Create data records
 	for i, b := range blocks {
-		fqdn := fmt.Sprintf("%s-%v", filename, i)
-		//fqdn := fmt.Sprintf("%s-%v.%s", filename, i, domain)
+		fqdn := fmt.Sprintf("%s.%v.media.%s", filename, i, domain)
 		err := c.createRecord(fqdn, b)
 		if err != nil {
 			log.Fatalf("Failed to create block %d of %s: %v", i, filename, err)
-			break
-		} else {
-			log.Debugf("Successfully created record: %s", fqdn)
+			return err
 		}
 	}
 
@@ -75,19 +80,14 @@ func (c *CloudflareDnsProvider) createRecord(fqdn string, data string) error {
 
 		serr := err.Error()
 		if strings.Contains(serr, strconv.Itoa(ErrRecordAlreadyExistsCode)) {
-			log.Warn("Duplicate record present removing...")
+			log.WithField("fqdn", fqdn).Warn("Duplicate record present removing...")
 			c.deleteRecord(fqdn)
 			c.createRecord(fqdn, data)
 		}
 		log.Error(err.Error())
 
-		//switch errc {
-		//default:
-		//	log.Errorf("Unknown error: %v", errc)
-		//case ErrRecordAlreadyExistsCode:
-		//	log.Error("Record already exists tho")
-		//}
-
+	} else {
+		log.Debugf("Successfully created record: %s", fqdn)
 	}
 
 	return err
@@ -110,9 +110,6 @@ func (c *CloudflareDnsProvider) readRecord() error {
 
 func (c *CloudflareDnsProvider) deleteRecord(fqdn string) error {
 
-	// TODO: Pass in the full domain to provider
-	fqdn = fqdn + ".tqid.dev"
-
 	log.Warnf("Deleting Cloudflare DNS records for %s", fqdn)
 
 	// Fetch records of any type with name "foo.example.com"
@@ -123,8 +120,8 @@ func (c *CloudflareDnsProvider) deleteRecord(fqdn string) error {
 		log.Fatal(err)
 	}
 
+	// Enumerate and delete
 	for _, rec := range recs {
-		log.Infof("Deleting Cloudflare DNS record %d", rec.ID)
 		err := c.api.DeleteDNSRecord(context.Background(), c.apiZone, rec.ID)
 		if err != nil {
 			return err

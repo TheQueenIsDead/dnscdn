@@ -3,7 +3,6 @@ package main
 import (
 	"dnscdn/commands"
 	"dnscdn/config"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"os"
@@ -21,7 +20,7 @@ func main() {
 		Name:  "DNSCDN",
 		Usage: "Store and retrieve media by use of 'free' DNS storage.",
 		Action: func(*cli.Context) error {
-			fmt.Println("boom! I say!")
+			log.Info("Default action")
 			return nil
 		},
 		Flags: []cli.Flag{
@@ -41,16 +40,14 @@ func main() {
 		},
 		Commands: []*cli.Command{
 			{
-				Name:    "upload",
-				Aliases: []string{"u"},
-				Usage:   "Upload a file to a given DNS provider by means of TXT record.",
-				Action:  commands.UploadCommand,
+				Name:   "upload",
+				Usage:  "Upload a file to a given DNS provider by means of TXT record.",
+				Action: commands.UploadCommand,
 			},
 			{
-				Name:    "download",
-				Aliases: []string{"d"},
-				Usage:   "Retrieve file data from DNS and save it locally.",
-				Action:  commands.DownloadCommand,
+				Name:   "download",
+				Usage:  "Retrieve file data from DNS and save it locally.",
+				Action: commands.DownloadCommand,
 			},
 			{
 				Name:    "list",
