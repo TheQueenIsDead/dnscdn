@@ -50,10 +50,14 @@ func main() {
 				Action: commands.DownloadCommand,
 			},
 			{
-				Name:    "list",
-				Aliases: []string{"d"},
-				Usage:   "Given a domain, enumerate for previously saved DNSCDN media.",
-				Action:  commands.ListCommand,
+				Name:   "delete",
+				Usage:  "Remove all file specific records for a domain.",
+				Action: commands.DeleteCommand,
+			},
+			{
+				Name:   "list",
+				Usage:  "Given a domain, enumerate for previously saved DNSCDN media.",
+				Action: commands.ListCommand,
 			},
 		},
 	}

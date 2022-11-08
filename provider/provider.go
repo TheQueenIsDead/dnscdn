@@ -11,5 +11,5 @@ type DnsProvider interface {
 	Blockify(filename string, blocks []string) error
 	createRecord() error
 	readRecord() error
-	deleteRecord() error
+	DeleteRecord() error
 }

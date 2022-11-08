@@ -21,10 +21,14 @@ Upload
 dnscdn -f melvin.png -d tqid.dev upload
 ```
 
+Delete
+```console
+dnscdn -f melvin.png -d tqid.dev delete
+```
+
 Help
 ```console
 dnscdn --help
-
 NAME:
    DNSCDN - Store and retrieve media by use of 'free' DNS storage.
 
@@ -32,10 +36,11 @@ USAGE:
    DNSCDN [global options] command [command options] [arguments...]
 
 COMMANDS:
-   upload, u    Upload a file to a given DNS provider by means of TXT record.
-   download, d  Retrieve file data from DNS and save it locally.
-   list, d      Given a domain, enumerate for previously saved DNSCDN media.
-   help, h      Shows a list of commands or help for one command
+   upload    Upload a file to a given DNS provider by means of TXT record.
+   download  Retrieve file data from DNS and save it locally.
+   delete    Remove all file specific records for a domain.
+   list, d   Given a domain, enumerate for previously saved DNSCDN media.
+   help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
    --file value, -f value    File to retrieve or upload, including extension.

@@ -81,7 +81,7 @@ func (c *CloudflareDnsProvider) createRecord(fqdn string, data string) error {
 		serr := err.Error()
 		if strings.Contains(serr, strconv.Itoa(ErrRecordAlreadyExistsCode)) {
 			log.WithField("fqdn", fqdn).Warn("Duplicate record present removing...")
-			c.deleteRecord(fqdn)
+			c.DeleteRecord(fqdn)
 			c.createRecord(fqdn, data)
 		}
 		log.Error(err.Error())
@@ -108,7 +108,7 @@ func (c *CloudflareDnsProvider) readRecord() error {
 	return err
 }
 
-func (c *CloudflareDnsProvider) deleteRecord(fqdn string) error {
+func (c *CloudflareDnsProvider) DeleteRecord(fqdn string) error {
 
 	log.Warnf("Deleting Cloudflare DNS records for %s", fqdn)
 
