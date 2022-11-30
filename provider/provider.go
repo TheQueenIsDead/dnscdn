@@ -8,8 +8,9 @@ const (
 
 type DnsProvider interface {
 	Authenticate() error
-	Blockify(filename string, blocks []string) error
-	createRecord() error
-	readRecord() error
-	DeleteRecord() error
+	Blockify(filename string, domain string, blocks []string) error
+	CreateRecord(fqdn string, data string) error
+	ReadRecord() error
+	UpdateRecord() error
+	DeleteRecord(fqdn string) error
 }

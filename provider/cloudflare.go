@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	"dnscdn/lib"
 	"fmt"
 	"github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
@@ -10,7 +11,6 @@ import (
 	"strings"
 )
 
-// TODO: If this shrinks then it is possible that new TXT records will be created as the data is different.
 const ErrRecordAlreadyExistsCode = 81057
 
 type CloudflareDnsProvider struct {
@@ -46,9 +46,9 @@ func (c *CloudflareDnsProvider) Blockify(filename string, domain string, blocks 
 	var err error
 
 	// Create index record
-	idxName := fmt.Sprintf("%s.media.%s", filename, domain)
+	idxName := lib.IndexFqdn(domain)
 	idxData := len(blocks)
-	err = c.createRecord(idxName, strconv.Itoa(idxData))
+	err = c.CreateRecord(idxName, strconv.Itoa(idxData))
 	if err != nil {
 		log.WithError(err).Error("Could not create index record.")
 		return err
@@ -56,8 +56,8 @@ func (c *CloudflareDnsProvider) Blockify(filename string, domain string, blocks 
 
 	// Create data records
 	for i, b := range blocks {
-		fqdn := fmt.Sprintf("%s.%v.media.%s", filename, i, domain)
-		err := c.createRecord(fqdn, b)
+		fqdn := lib.DataFqdn(filename, i, domain)
+		err := c.CreateRecord(fqdn, b)
 		if err != nil {
 			log.Fatalf("Failed to create block %d of %s: %v", i, filename, err)
 			return err
@@ -67,7 +67,7 @@ func (c *CloudflareDnsProvider) Blockify(filename string, domain string, blocks 
 	return err
 }
 
-func (c *CloudflareDnsProvider) createRecord(fqdn string, data string) error {
+func (c *CloudflareDnsProvider) CreateRecord(fqdn string, data string) error {
 
 	_, err := c.api.CreateDNSRecord(context.Background(), c.apiZone, cloudflare.DNSRecord{
 		Type:    "TXT",
@@ -82,7 +82,7 @@ func (c *CloudflareDnsProvider) createRecord(fqdn string, data string) error {
 		if strings.Contains(serr, strconv.Itoa(ErrRecordAlreadyExistsCode)) {
 			log.WithField("fqdn", fqdn).Warn("Duplicate record present removing...")
 			c.DeleteRecord(fqdn)
-			c.createRecord(fqdn, data)
+			c.CreateRecord(fqdn, data)
 		}
 		log.Error(err.Error())
 
@@ -93,7 +93,7 @@ func (c *CloudflareDnsProvider) createRecord(fqdn string, data string) error {
 	return err
 }
 
-func (c *CloudflareDnsProvider) readRecord() error {
+func (c *CloudflareDnsProvider) ReadRecord() error {
 
 	// Fetch all records for a zone
 	recs, err := c.api.DNSRecords(context.Background(), c.apiZone, cloudflare.DNSRecord{})
@@ -106,6 +106,11 @@ func (c *CloudflareDnsProvider) readRecord() error {
 	}
 
 	return err
+}
+
+func (c *CloudflareDnsProvider) UpdateRecord() error {
+	panic("not implemented")
+	return nil
 }
 
 func (c *CloudflareDnsProvider) DeleteRecord(fqdn string) error {

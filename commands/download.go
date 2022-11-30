@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"dnscdn/lib"
 	"encoding/base64"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -15,7 +16,7 @@ func DownloadCommand(cCtx *cli.Context) error {
 
 	fileName := cCtx.String("file")
 	domainName := cCtx.String("domain")
-	idxFqdn := fmt.Sprintf("%s.media.%s", fileName, domainName)
+	idxFqdn := lib.IndexFqdn(domainName)
 
 	log.Infof("Retrieving %s.", fileName)
 

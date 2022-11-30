@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"dnscdn/lib"
 	"dnscdn/provider"
 	"fmt"
 	log "github.com/sirupsen/logrus"
@@ -14,11 +15,6 @@ func DeleteCommand(cCtx *cli.Context) error {
 	fileName := cCtx.String("file")
 	domainName := cCtx.String("domain")
 
-	//mediaSplit := strings.Split(idxFqdn, ".media.")
-	//fileName := mediaSplit[0]
-	//domainName := mediaSplit[len(mediaSplit)-1]
-	//
-
 	dnsProvider := provider.CloudflareDnsProvider{}
 	err := dnsProvider.Authenticate()
 	if err != nil {
@@ -26,7 +22,7 @@ func DeleteCommand(cCtx *cli.Context) error {
 		return nil
 	}
 
-	idxFqdn := fmt.Sprintf("%s.media.%s", fileName, domainName)
+	idxFqdn := lib.IndexFqdn(domainName)
 
 	// Lookup index record in order to find count of records
 	idx, err := net.LookupTXT(idxFqdn)
