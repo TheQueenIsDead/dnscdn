@@ -3,15 +3,12 @@ package provider
 import (
 	"context"
 	"dnscdn/lib"
+	"errors"
 	"fmt"
 	"github.com/cloudflare/cloudflare-go"
 	log "github.com/sirupsen/logrus"
 	"os"
-	"strconv"
-	"strings"
 )
-
-const ErrRecordAlreadyExistsCode = 81057
 
 type CloudflareDnsProvider struct {
 	api      cloudflare.API
@@ -38,28 +35,19 @@ func (c *CloudflareDnsProvider) Authenticate() error {
 	log.Infof("Successfully authenticated with Cloudflare.")
 	c.api = *api
 
-	return nil
+	return err
 }
 
-func (c *CloudflareDnsProvider) Blockify(filename string, domain string, blocks []string) error {
+func (c *CloudflareDnsProvider) Blockify(fileName string, domainName string, blocks []string) error {
 
 	var err error
 
-	// Create index record
-	idxName := lib.IndexFqdn(domain)
-	idxData := len(blocks)
-	err = c.CreateRecord(idxName, strconv.Itoa(idxData))
-	if err != nil {
-		log.WithError(err).Error("Could not create index record.")
-		return err
-	}
-
 	// Create data records
 	for i, b := range blocks {
-		fqdn := lib.DataFqdn(filename, i, domain)
+		fqdn := lib.DataFqdn(fileName, domainName, i)
 		err := c.CreateRecord(fqdn, b)
 		if err != nil {
-			log.Fatalf("Failed to create block %d of %s: %v", i, filename, err)
+			log.WithError(err).Error("Failed to create block %d of %s: %v", i, fileName, err)
 			return err
 		}
 	}
@@ -77,15 +65,7 @@ func (c *CloudflareDnsProvider) CreateRecord(fqdn string, data string) error {
 	})
 
 	if err != nil {
-
-		serr := err.Error()
-		if strings.Contains(serr, strconv.Itoa(ErrRecordAlreadyExistsCode)) {
-			log.WithField("fqdn", fqdn).Warn("Duplicate record present removing...")
-			c.DeleteRecord(fqdn)
-			c.CreateRecord(fqdn, data)
-		}
-		log.Error(err.Error())
-
+		log.WithError(err).Error("Could not create record")
 	} else {
 		log.Debugf("Successfully created record: %s", fqdn)
 	}
@@ -108,9 +88,38 @@ func (c *CloudflareDnsProvider) ReadRecord() error {
 	return err
 }
 
-func (c *CloudflareDnsProvider) UpdateRecord() error {
-	panic("not implemented")
-	return nil
+func (c *CloudflareDnsProvider) UpdateRecord(fqdn string, data string) error {
+
+	logger := log.StandardLogger().WithFields(log.Fields{
+		"fqdn": fqdn,
+	})
+
+	// Fetch records of any type with name "foo.example.com"
+	// The name must be fully-qualified
+	foo := cloudflare.DNSRecord{Name: fqdn}
+	recs, err := c.api.DNSRecords(context.Background(), c.apiZone, foo)
+	if err != nil {
+		logger.Fatal(err)
+	}
+
+	if len(recs) != 1 {
+		return errors.New("more than one record returned while trying to update")
+	}
+
+	err = c.api.UpdateDNSRecord(context.Background(), c.apiZone, recs[0].ID, cloudflare.DNSRecord{
+		Type:    "TXT",
+		Name:    fqdn,
+		Content: data,
+		ZoneID:  c.apiZone,
+	})
+
+	if err != nil {
+		logger.WithError(err).Error("Could not update record.")
+	} else {
+		logger.Info("Record updated.")
+	}
+
+	return err
 }
 
 func (c *CloudflareDnsProvider) DeleteRecord(fqdn string) error {

@@ -3,62 +3,59 @@ package commands
 import (
 	"dnscdn/lib"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 	"net"
 	"os"
-	"strconv"
-	"strings"
 )
 
+// DownloadCommand checks to see if the given file is in the index, then enumerates the data TXT records based on
+// the count stored in the index at the time.
+// It then writes the file out to the current directory with the prefix "DNS-".
 func DownloadCommand(cCtx *cli.Context) error {
 
 	fileName := cCtx.String("file")
 	domainName := cCtx.String("domain")
 	idxFqdn := lib.IndexFqdn(domainName)
 
-	log.Infof("Retrieving %s.", fileName)
+	// Lookup index record in order to find count of data records
+	idx, err := net.LookupTXT(idxFqdn)
+	if err != nil {
+		return err
+	}
+	records := lib.ParseIndex(idx[0])
 
-	fileData, err := dnsToFile(idxFqdn)
+	// Check the index contains the file we're trying to retrieve
+	if _, ok := records[fileName]; !ok {
+		return errors.New(fmt.Sprintf("Could not locate file '%s' in domain index", fileName))
+	}
+	idxN := records[fileName]
+
+	// Enumerate and write
+	log.Infof("Retrieving %s (%d records)", fileName, idxN)
+
+	fileData, err := dnsToFile(fileName, domainName, idxN)
 	if err != nil {
 		return err
 	}
 
+	log.Info("Data retrieved.")
 	err = os.WriteFile(fmt.Sprintf("DNS-%s", fileName), fileData, os.ModeAppend)
 
 	return err
 
 }
 
-func dnsToFile(idxFqdn string) ([]byte, error) {
-
-	mediaSplit := strings.Split(idxFqdn, ".media.")
-	fileName := mediaSplit[0]
-	domainName := mediaSplit[len(mediaSplit)-1]
-
-	logger := log.StandardLogger().WithFields(log.Fields{
-		"fqdn":   idxFqdn,
-		"file":   fileName,
-		"domain": domainName,
-	})
-
-	// Lookup index record in order to find count of records
-	idx, err := net.LookupTXT(idxFqdn)
-	if err != nil {
-		return nil, err
-	}
-	idxN, _ := strconv.Atoi(idx[0])
+func dnsToFile(fileName string, domainName string, idxN int) ([]byte, error) {
 
 	// Enumerate records and store data in variable
 	sfile := ""
 	for i := 0; i < idxN; i++ {
-		lookup := fmt.Sprintf("%s.%d.media.%s", fileName, i, domainName)
-		logger = logger.WithField("record", lookup)
-		logger.Debugf("Retrieving TXT record.")
+		lookup := lib.DataFqdn(fileName, domainName, i)
 		txt, err := net.LookupTXT(lookup)
 		if err != nil {
-			logger.WithError(err).Error("Could not retrieve TXT record.")
 			return nil, err
 		}
 		sfile = sfile + txt[0]

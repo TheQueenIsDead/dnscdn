@@ -21,6 +21,15 @@ Upload
 dnscdn -f melvin.png -d tqid.dev upload
 ```
 
+List
+```console
+dnscdn -f tqid.dev list
+
+DNSCDN files on tqid.dev:
+Filename             Length     Size (kB) 
+melvin.png           7          14       
+```
+
 Delete
 ```console
 dnscdn -f melvin.png -d tqid.dev delete

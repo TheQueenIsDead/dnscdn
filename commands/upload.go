@@ -2,16 +2,33 @@ package commands
 
 import (
 	"dnscdn/config"
+	"dnscdn/lib"
 	"dnscdn/provider"
 	"encoding/base64"
+	"errors"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"net"
 	"os"
 )
 
 func UploadCommand(cCtx *cli.Context) error {
 
 	fileName := cCtx.String("file")
+	domainName := cCtx.String("domain")
+	idxFqdn := lib.IndexFqdn(domainName)
+
+	// Lookup index record in order to see if file already exists
+	records := map[string]int{}
+	idx, err := net.LookupTXT(idxFqdn)
+	if err == nil {
+		// Exit if the index already contains the file we're trying to retrieve
+		if _, ok := records[fileName]; ok {
+			return errors.New(fmt.Sprintf("File '%s' already exists in domain index.", fileName))
+		}
+		records = lib.ParseIndex(idx[0])
+	}
 
 	// Load file
 	file, err := os.ReadFile(fileName)
@@ -34,10 +51,17 @@ func UploadCommand(cCtx *cli.Context) error {
 		log.WithError(err).Error("Error encountered calling Authenticate()")
 		return nil
 	}
-	err = dnsProvider.Blockify(fileName, "tqid.dev", blocks)
+	err = dnsProvider.Blockify(fileName, domainName, blocks)
 	if err != nil {
 		log.WithError(err).Error("Error encountered calling Blockify()")
 		return nil
+	}
+
+	// Update index
+	records[fileName] = len(blocks)
+	err = lib.UpdateIndex(domainName, records, &dnsProvider)
+	if err != nil {
+		return err
 	}
 
 	return nil
