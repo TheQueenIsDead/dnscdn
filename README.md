@@ -13,17 +13,17 @@ As it happens it's rather trivial. More about this project can be read on my [bl
 
 Download
 ```console
-dnscdn -f melvin.png -d tqid.dev download
+dnscdn download -f melvin.png -d tqid.dev 
 ```
 
 Upload
 ```console
-dnscdn -f melvin.png -d tqid.dev upload
+dnscdn upload -f melvin.png -d tqid.dev 
 ```
 
 List
 ```console
-dnscdn -f tqid.dev list
+dnscdn list -f tqid.dev
 
 DNSCDN files on tqid.dev:
 Filename             Length     Size (kB) 
@@ -32,12 +32,11 @@ melvin.png           7          14
 
 Delete
 ```console
-dnscdn -f melvin.png -d tqid.dev delete
+dnscdn delete -f melvin.png -d tqid.dev
 ```
 
 Help
 ```console
-dnscdn --help
 NAME:
    DNSCDN - Store and retrieve media by use of 'free' DNS storage.
 
@@ -48,11 +47,9 @@ COMMANDS:
    upload    Upload a file to a given DNS provider by means of TXT record.
    download  Retrieve file data from DNS and save it locally.
    delete    Remove all file specific records for a domain.
-   list, d   Given a domain, enumerate for previously saved DNSCDN media.
+   list      Given a domain, enumerate for previously saved DNSCDN media.
    help, h   Shows a list of commands or help for one command
 
 GLOBAL OPTIONS:
-   --file value, -f value    File to retrieve or upload, including extension.
-   --domain value, -d value  Domain to retrieve from or upload to.
-   --help, -h                show help (default: false)
+   --help, -h  show help (default: false)
 ```

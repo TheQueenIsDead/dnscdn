@@ -23,41 +23,41 @@ func main() {
 			log.Info("Default action")
 			return nil
 		},
-		Flags: []cli.Flag{
-			&cli.StringFlag{
-				Name: "file",
-				//Value:       "",
-				Usage:       "File to retrieve or upload, including extension.",
-				Aliases:     []string{"f"},
-				Destination: &file,
-			},
-			&cli.StringFlag{
-				Name:        "domain",
-				Usage:       "Domain to retrieve from or upload to.",
-				Aliases:     []string{"d"},
-				Destination: &domain,
-			},
-		},
 		Commands: []*cli.Command{
 			{
 				Name:   "upload",
 				Usage:  "Upload a file to a given DNS provider by means of TXT record.",
 				Action: commands.UploadCommand,
+				Flags: []cli.Flag{
+					commands.FileNameFlag(&file),
+					commands.DomainNameFlag(&domain),
+				},
 			},
 			{
 				Name:   "download",
 				Usage:  "Retrieve file data from DNS and save it locally.",
 				Action: commands.DownloadCommand,
+				Flags: []cli.Flag{
+					commands.FileNameFlag(&file),
+					commands.DomainNameFlag(&domain),
+				},
 			},
 			{
 				Name:   "delete",
 				Usage:  "Remove all file specific records for a domain.",
 				Action: commands.DeleteCommand,
+				Flags: []cli.Flag{
+					commands.FileNameFlag(&file),
+					commands.DomainNameFlag(&domain),
+				},
 			},
 			{
 				Name:   "list",
 				Usage:  "Given a domain, enumerate for previously saved DNSCDN media.",
 				Action: commands.ListCommand,
+				Flags: []cli.Flag{
+					commands.DomainNameFlag(&domain),
+				},
 			},
 		},
 	}
